@@ -13,13 +13,14 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const [accData, townData, evalData] = await Promise.all([
-          getRealAccounts(10),
-          getRealTowns(),
-          evaluateRealData(),
-        ])
+        // Fetch sequentially (not Promise.all) so the free-tier backend handles
+        // one request at a time. Running these in parallel stacks memory/CPU and
+        // can OOM-crash the 512 MB instance.
+        const accData = await getRealAccounts(10)
         setAccounts(accData)
+        const townData = await getRealTowns()
         setTowns(townData)
+        const evalData = await evaluateRealData()
         setEvaluation(evalData)
         setError(null)
       } catch (err) {

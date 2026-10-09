@@ -13,6 +13,13 @@ from evaluation.ps3_experiments import run_ps3_experiments
 
 router = APIRouter()
 
+# Cache the surveyed-address evaluation result. It is deterministic for a given
+# dataset, but computing it runs the full geocoding pipeline over every surveyed
+# address (CPU/memory heavy). Computing it once and reusing the result keeps the
+# backend within the free-tier 512 MB / shared-CPU limits instead of recomputing
+# on every dashboard load.
+_evaluation_cache: Optional[dict] = None
+
 
 def get_geocoder() -> RealDataGeocoder:
     """Get geocoder with loaded dataset."""
@@ -126,11 +133,17 @@ async def geocode_real_address(address_id: str):
 
 
 @router.get("/real/evaluate")
-async def evaluate_real_data():
-    """Evaluate geocoder on surveyed addresses."""
-    geocoder = get_geocoder()
-    results = geocoder.evaluate_on_surveyed()
-    return results
+async def evaluate_real_data(refresh: bool = Query(False)):
+    """Evaluate geocoder on surveyed addresses.
+
+    The result is cached after the first computation. Pass ``?refresh=true`` to
+    force a recompute.
+    """
+    global _evaluation_cache
+    if _evaluation_cache is None or refresh:
+        geocoder = get_geocoder()
+        _evaluation_cache = geocoder.evaluate_on_surveyed()
+    return _evaluation_cache
 
 
 @router.get("/real/evaluation/ps3")
