@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: openiit-backend
+    runtime: docker
+    # Build context is the repo root (the Dockerfile COPYs backend/, Dataset/, evaluation_artifacts/)
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///./data/geocoder.db
+      - key: LOG_LEVEL
+        value: INFO
+      # Set this to your Vercel URL after the frontend is deployed, e.g.
+      # https://openiit-data-26.vercel.app
+      - key: CORS_ORIGINS
+        sync: false
